@@ -1,0 +1,14 @@
+CREATE DATABASE studentdb;
+
+USE studentdb;
+
+CREATE TABLE students (
+    roll_no INT PRIMARY KEY,
+    name VARCHAR(100),
+    subject1 INT,
+    subject2 INT,
+    subject3 INT,
+    total INT,
+    average FLOAT,
+    grade CHAR(1)
+);

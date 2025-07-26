@@ -1,0 +1,150 @@
+import java.sql.*;
+import java.util.Scanner;
+
+public class StudentResultSystem {
+
+    static final String URL = "jdbc:mysql://localhost:3306/studentdb";
+    static final String USER = "root";
+    static final String PASS = "";  // Change if password is set
+
+    static Connection conn;
+    static Scanner sc = new Scanner(System.in);
+
+    public static void main(String[] args) {
+        try {
+            conn = DriverManager.getConnection(URL, USER, PASS);
+            while (true) {
+                System.out.println("\n--- Student Result Management ---");
+                System.out.println("1. Add Student");
+                System.out.println("2. View All Students");
+                System.out.println("3. View Student by Roll No");
+                System.out.println("4. Update Student Marks");
+                System.out.println("5. Delete Student");
+                System.out.println("6. Exit");
+                System.out.print("Enter choice: ");
+                int choice = sc.nextInt();
+
+                switch (choice) {
+                    case 1: addStudent(); break;
+                    case 2: viewAll(); break;
+                    case 3: viewOne(); break;
+                    case 4: updateMarks(); break;
+                    case 5: deleteStudent(); break;
+                    case 6: conn.close(); System.exit(0);
+                    default: System.out.println("Invalid choice");
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
+    static void addStudent() throws SQLException {
+        System.out.print("Enter Roll No: ");
+        int roll = sc.nextInt();
+        sc.nextLine();
+        System.out.print("Enter Name: ");
+        String name = sc.nextLine();
+        System.out.print("Enter Marks for Subject 1: ");
+        int s1 = sc.nextInt();
+        System.out.print("Enter Marks for Subject 2: ");
+        int s2 = sc.nextInt();
+        System.out.print("Enter Marks for Subject 3: ");
+        int s3 = sc.nextInt();
+
+        int total = s1 + s2 + s3;
+        float avg = total / 3.0f;
+        char grade = (avg >= 90) ? 'A' : (avg >= 75) ? 'B' : (avg >= 50) ? 'C' : 'F';
+
+        String sql = "INSERT INTO students VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setInt(1, roll);
+        ps.setString(2, name);
+        ps.setInt(3, s1);
+        ps.setInt(4, s2);
+        ps.setInt(5, s3);
+        ps.setInt(6, total);
+        ps.setFloat(7, avg);
+        ps.setString(8, String.valueOf(grade));
+
+        ps.executeUpdate();
+        System.out.println("Student added successfully.");
+    }
+
+    static void viewAll() throws SQLException {
+        Statement stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT * FROM students");
+        System.out.printf("%-5s %-20s %-8s %-8s %-8s %-6s %-8s %-6s\n", "Roll", "Name", "Sub1", "Sub2", "Sub3", "Total", "Average", "Grade");
+        while (rs.next()) {
+            System.out.printf("%-5d %-20s %-8d %-8d %-8d %-6d %-8.2f %-6s\n",
+                rs.getInt("roll_no"), rs.getString("name"),
+                rs.getInt("subject1"), rs.getInt("subject2"), rs.getInt("subject3"),
+                rs.getInt("total"), rs.getFloat("average"), rs.getString("grade"));
+        }
+    }
+
+    static void viewOne() throws SQLException {
+        System.out.print("Enter Roll No: ");
+        int roll = sc.nextInt();
+        String sql = "SELECT * FROM students WHERE roll_no = ?";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setInt(1, roll);
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            System.out.println("Name: " + rs.getString("name"));
+            System.out.println("Subject 1: " + rs.getInt("subject1"));
+            System.out.println("Subject 2: " + rs.getInt("subject2"));
+            System.out.println("Subject 3: " + rs.getInt("subject3"));
+            System.out.println("Total: " + rs.getInt("total"));
+            System.out.println("Average: " + rs.getFloat("average"));
+            System.out.println("Grade: " + rs.getString("grade"));
+        } else {
+            System.out.println("No student found.");
+        }
+    }
+
+    static void updateMarks() throws SQLException {
+        System.out.print("Enter Roll No: ");
+        int roll = sc.nextInt();
+        System.out.print("New Subject 1 Marks: ");
+        int s1 = sc.nextInt();
+        System.out.print("New Subject 2 Marks: ");
+        int s2 = sc.nextInt();
+        System.out.print("New Subject 3 Marks: ");
+        int s3 = sc.nextInt();
+
+        int total = s1 + s2 + s3;
+        float avg = total / 3.0f;
+        char grade = (avg >= 90) ? 'A' : (avg >= 75) ? 'B' : (avg >= 50) ? 'C' : 'F';
+
+        String sql = "UPDATE students SET subject1=?, subject2=?, subject3=?, total=?, average=?, grade=? WHERE roll_no=?";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setInt(1, s1);
+        ps.setInt(2, s2);
+        ps.setInt(3, s3);
+        ps.setInt(4, total);
+        ps.setFloat(5, avg);
+        ps.setString(6, String.valueOf(grade));
+        ps.setInt(7, roll);
+
+        int rows = ps.executeUpdate();
+        if (rows > 0)
+            System.out.println("Record updated.");
+        else
+            System.out.println("Student not found.");
+    }
+
+    static void deleteStudent() throws SQLException {
+        System.out.print("Enter Roll No to delete: ");
+        int roll = sc.nextInt();
+        String sql = "DELETE FROM students WHERE roll_no=?";
+        PreparedStatement ps = conn.prepareStatement(sql);
+        ps.setInt(1, roll);
+        int rows = ps.executeUpdate();
+        if (rows > 0)
+            System.out.println("Student deleted.");
+        else
+            System.out.println("No student found.");
+    }
+}
